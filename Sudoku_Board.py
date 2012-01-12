@@ -10,8 +10,7 @@ class Sudoku_Board(object):
         self.board = [0] * self.board_size
         self.isValidBoard = True
         self.givens = {} # dictionary to hold given spots with coordinate (tuple) as key and (int) 0-9 as value
-        self.found_values = {} # similar to givens, but these are logically found values (non-guesses)
-        self.guesses = {} # similar to givens, except the 
+        self.guesses = {} # similar to givens, except the keys will consist of tuples of possible answers 
         for r in xrange(self.board_size): # prefill the board with zeros
             self.board[r] = [0] * self.board_size
 
@@ -84,6 +83,8 @@ class Sudoku_Board(object):
         return True # return true if a duplicate is not found or value == 0
 
     def valid_board(self):
+        if self.__class__ != Sudoku_Board:
+            return False
         # check rows
         for row in xrange(self.board_size):
             if Sudoku_Board.has_duplicate(self.board[row][:]): # pass list by value
@@ -116,62 +117,74 @@ class Sudoku_Board(object):
     # TODO: This find givens will be made obsolete after inputing givens is created.  It is used
     #       currently by solve_board
     def find_givens(self):
+        assert self.valid_board() # added to ensure that board is valid before finding givens
         for row in xrange(self.board_size):
             for col in xrange(self.board_size):
                 tempval = self.get(row, col)
                 if 0 < tempval <= self.board_size: # ignore non-valid numbers
                     self.givens[(row,col)] = tempval
-    
-#    def find_values(self):
-#        # get row
-#        for x in xrange(9):
-#            # get col
-#            for y in xrange(9):
-#                if (self.givens.has_key((x,y)):
-#                    break # skip this loop if the current position is a given (thus should not be overwritten)
-#                else: # else generate a list of possible values and add it to self.other_values
 
-    def solve_board(self, curr_board):
+    # input: a valid sudoku board
+    # output: none, but will mutate self.givens by adding other logical values.
+    def find_values(self):
+        # At this point, we will assume that self is a valid board
+        assert self.valid_board()
+        print ">>>> Finding given values:" 
+        self.find_givens()
+        # loop through board and find all possible values for each slot, ignoring given slots
+        for row in xrange(self.board_size):
+            for col in xrange(self.board_size):
+                temp_key = (row,col)
+                if not self.givens.has_key(temp_key):
+                    # if not in guesses, find all possible values for that position
+                    if not self.guesses.has_key(temp_key):
+                        self.guesses[temp_key] = []
+                        # only add values that are valid to the guesses list
+                        choices = xrange(1, self.board_size + 1) # possible values to insert
+                        self.guesses[temp_key] = [ v for v in choices if self.validate_move(row, col, v) ]
+                    else: # if (rol, col) key is found in guesses
+                        # verify values work with current board
+                        self.guesses[temp_key] = [ v for v in self.guesses[temp_key] if self.validate_move(row, col, v)
+
+                num_guesses = len(self.guesses[temp_key])
+                # if there are no possible values
+                if num_guesses < 1:
+                    print ">>> No possible values for position: " + str((row, col))
+                    # assume this board is not solveable
+                # if there is only 1 possible value 
+                if num_guesses == 1:
+                    val = self.guesses.pop((row, col)) # gets val and removes entry TODO: make sure this works
+                    # add tuple (row, col) to self.givens as key and value as value
+                    self.givens[(row, col)] = val
+                    # add value to self.board[row][col] = value
+                    self.board[row][col] = val
+                # else
+                    # move onto the next one
+                else:
+                    pass # skip if the current spot is a given value
+
+    def solve_board(self):
         ''' solve_board sets up the board to be solved, including validating the original board,
             finding the given values, then passing on a copy of the board to recursive helper
             function solve_board_helper.'''
-        assert curr_board.__class__ == Sudoku_Board.Board
-        if curr_board.valid_board():
-            temp = Board()
-            temp.board = copy.deepcopy(curr_board)
-            # only add givens if the dictionary is empty
-            if len(self.givens.keys()) == 0:
-                print "Finding given values:"
-                self.find_givens()
-                print temp.givens # print found givens
-            else:
-                print "Did not have to search for givens."
-            temp.givens = copy.deepcopy(self.givens)
-
-            # find other logical givens   
+        assert self.__class__ == Sudoku_Board
+        if self.valid_board():
+            self.find_givens() # finds givens of board
+            temp = Board() # make a new copy of board
+            temp.board = copy.deepcopy(self.board)
+            print temp.givens
+            # find logical givens
             temp.find_values()
-
-            # guess correct solutions
-            if (solution.valid_board()):
-                print ">>> Passing solve_board_helper() valid board:"
-                print solution
-            for row in xrange(self.board_size):
-                for col in xrange(self.board_size):
-                    if solution.get(row, col) == 0:
-                        pass
-            first_empty = (0,0)
-            
-            solution = solve_board_helper(solution, first_empty)
-
-            print solution
-            return solution
+            # starting making guesses to solve the board
+            print ">>> Starting recursive board solution search"
+            return temp.solve_board_helper()
         else:
-            print "This is not a valid board:"
+            print ">>> This is not a valid board:"
             print self
             return None
     
-    def solve_board_helper(self, curr_board, curr_move):
-        if curr_board.valid_board():
+    def solve_board_helper(self):
+        if self.valid_board():
             #  make a deep copy of the original board
             solution = Board()
             solution.board = copy.deepcopy(curr_board)
