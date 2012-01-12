@@ -7,7 +7,9 @@ class Board(object):
     def __init__(self):
         self.board = [0] * 9
         self.isValidBoard = True
-        self.givens = {} # dictionary to hold given spots
+        self.givens = {} # dictionary to hold given spots with coordinate (tuple) as key and (int) 0-9 as value
+        self.found_values = {} # similar to givens, but these are logically found values (non-guesses)
+        self.guesses = {} # similar to givens, except the 
         for r in xrange(9): # prefill the board with zeros
             self.board[r] = [0] * 9
 
@@ -16,14 +18,28 @@ class Board(object):
 
     def get(self, row, col):
         return self.board[row][col]
+    # return a copy of the row in a list
+    def get_row(self, row):
+        return copy.deepcopy(self.board[row])
+    def get_col(self, col):
+        return copy.deepcopy([self.board[i][col] for i in range(9)])
 
-    def get_sub_block_values(self, start_x, start_y):
+    # input: a starting x and y value inside of the board
+    # output: list of numbers inside sub_block of size block_size * block_size
+    # time complexity: n = block_size, O(n^2)
+    def get_sub_block(self, start_x, start_y):
+        # normalize start x and start y to be the starting block value
+        block_size = 3 # block size is width and height of square sub-block of numbers
+        start_x, start_y = start_x / block_size, start_y / block_size
         temp = []
-        for row in xrange(3):
-            for col in xrange(3):
+        for row in xrange(block_size):
+            for col in xrange(block_size):
                 temp.append(self.get(start_x + row, start_y + col))
         return temp
 
+    # input: a list of numbers (row, col, or sub_block) and an excluded value
+    # output: returns True if a duplicate is found in the list (ignoring duplicates of the excluded value)
+    # time complexity: n = size of list, O(n log n) 
     def has_duplicate(self, mylist, excluded_value = 0):
         assert mylist.__class__ == list
         mylist.sort()
@@ -34,7 +50,10 @@ class Board(object):
                 return True
             i += 1
         return False
- 
+
+    # TODO: this potentially has problems.
+    # TODO: check sub_block for duplicates
+    # TODO: figure out how you are going to exclude the current selected position.
     def validate_move(self, row, col, value):
         '''When passed a row, col, and value, returns True if the move is valid and there are no
         duplicates of value found in the row and col selected, otherwise if a match to Value is
@@ -43,6 +62,10 @@ class Board(object):
         assert (0 <= row < 9)
         assert (0 <= col < 9)
         if value != 0: # 0 symbolizes an empty box
+            # check row
+            # check col
+            # check sub_block
+            temp_sub_block = get_sub_block(row, col)
             for i in xrange(9):
                 # checks for other numbers in the same row or col that match value
                 # please note that it excludes the box of current selected row and col
@@ -69,25 +92,35 @@ class Board(object):
                 print "Duplicate found in col: " + str(col) 
                 print tempcol
                 return False
-
         # check sub blocks
         start_vals_x = list(xrange(9))[::3]
         start_vals_y = list(xrange(9))[::3]
         for x in start_vals_x:
             for y in start_vals_y:
-                if self.has_duplicate(self.get_sub_block_values(x,y)):
+                if self.has_duplicate(self.get_sub_block(x,y)):
                     print "Duplicate found in sub block: [" + str(x) + ", " + str(y) + "]"
                     print self
                     return False
-
-        return True # if no duplicate is found, return True
-   
+        # if no duplicate is found, return True
+        return True
+    
+    # TODO: This find givens will be made obsolete after inputing givens is created.  It is used
+    #       currently by solve_board
     def find_givens(self):
         for row in xrange(9):
             for col in xrange(9):
                 tempval = self.get(row, col)
                 if 0 < tempval <= 9: # ignore non-valid numbers
                     self.givens[(row,col)] = tempval
+    
+#    def find_values(self):
+#        # get row
+#        for x in xrange(9):
+#            # get col
+#            for y in xrange(9):
+#                if (self.givens.has_key((x,y)):
+#                    break # skip this loop if the current position is a given (thus should not be overwritten)
+#                else: # else generate a list of possible values and add it to self.other_values
 
     def solve_board(self, curr_board):
         ''' solve_board sets up the board to be solved, including validating the original board,
@@ -107,7 +140,8 @@ class Board(object):
             temp.givens = copy.deepcopy(self.givens)
 
             # find other logical givens   
-            
+            temp.find_values()
+
             # guess correct solutions
             if (solution.valid_board()):
                 print ">>> Passing solve_board_helper() valid board:"
@@ -238,8 +272,20 @@ if __name__ == "__main__":
             if not test_result:
                 break # stop the loop if an invalid board failed to trigger valid_board()
 
+        # TEST: get_row, get_col
+        print "TESTING: get_row, get col"
+        print board1
+        for row in xrange(9):
+            print "Row " + str(row) + ":"
+            print board1.get_row(row)
+        m = "check row"
+
+        for col in xrange(9):
+            print "Col " + str(col) + ":"
+            print board1.get_col(col)
+        m = "check col"
+
         # flip two values
-        # TODO: Fix this, it doesn't work, always checking col 0
         for count in xrange(100):
             # generate random (x,y) coords
             # since swapping with the right value, I only generate rand ints to 7 (to prevent accessing cols
@@ -260,8 +306,8 @@ if __name__ == "__main__":
             test_message(test_result, m)
  
             # return original values
-            board1.set(temp_coord_x, temp_coord_y, temp_val_right)
-            board1.set(temp_coord_x, temp_coord_y + 1, temp_val_left)
+            board1.set(temp_coord_x, temp_coord_y, temp_val_left)
+            board1.set(temp_coord_x, temp_coord_y + 1, temp_val_right)
 
             if not test_result:
                 break # stop the loop if an invalid board failed to trigger valid_board()
