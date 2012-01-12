@@ -62,9 +62,9 @@ class Sudoku_Board(object):
         '''When passed a row, col, and value, returns True if the move is valid and there are no
         duplicates of value found in the row and col selected, otherwise if a match to Value is
         found, this function will return False.''' 
-        assert (0 <= value <= 9)
-        assert (0 <= row < 9)
-        assert (0 <= col < 9)
+        assert (0 <= value <= self.board_size)
+        assert (0 <= row < self.board_size)
+        assert (0 <= col < self.board_size)
         if value != 0: # 0 symbolizes an empty box
             # check row
             temp_row = get_row(row)
@@ -85,15 +85,15 @@ class Sudoku_Board(object):
 
     def valid_board(self):
         # check rows
-        for row in xrange(9):
+        for row in xrange(self.board_size):
             if Sudoku_Board.has_duplicate(self.board[row][:]): # pass list by value
                 print "Duplicate found in row: " + str(row)
                 print self.board[row]
                 return False
         # check cols
-        for col in xrange(9):
+        for col in xrange(self.board_size):
             tempcol = []
-            for row in xrange(9): # build a temporary column
+            for row in xrange(self.board_size): # build a temporary column
                 tempcol.append(self.get(row, col))
             if Sudoku_Board.has_duplicate(tempcol):
                 print "Duplicate found in col: " + str(col) 
@@ -116,10 +116,10 @@ class Sudoku_Board(object):
     # TODO: This find givens will be made obsolete after inputing givens is created.  It is used
     #       currently by solve_board
     def find_givens(self):
-        for row in xrange(9):
-            for col in xrange(9):
+        for row in xrange(self.board_size):
+            for col in xrange(self.board_size):
                 tempval = self.get(row, col)
-                if 0 < tempval <= 9: # ignore non-valid numbers
+                if 0 < tempval <= self.board_size: # ignore non-valid numbers
                     self.givens[(row,col)] = tempval
     
 #    def find_values(self):
@@ -155,8 +155,8 @@ class Sudoku_Board(object):
             if (solution.valid_board()):
                 print ">>> Passing solve_board_helper() valid board:"
                 print solution
-            for row in xrange(9):
-                for col in xrange(9):
+            for row in xrange(self.board_size):
+                for col in xrange(self.board_size):
                     if solution.get(row, col) == 0:
                         pass
             first_empty = (0,0)
@@ -180,13 +180,13 @@ class Sudoku_Board(object):
 
     def clear(self):
         self.givens.clear() # remove all given values
-        for row in xrange(9):
-            for col in xrange(9):
+        for row in xrange(self.board_size):
+            for col in xrange(self.board_size):
                 self.board[row][col] = 0
 
     def __repr__(self):
         result = ""
-        for i in xrange(9):
+        for i in xrange(self.board_size):
             result += self.board[i].__repr__()
             if i != 8:
                 result += '\n' 
@@ -214,15 +214,9 @@ if __name__ == "__main__":
                 print ">>> PASSED TEST: " + message + "\n"
                 pass_count += 1
             else:
-                print "!!! FAILED TEST: " + message + "\n"
-                print "!!! FAILED TEST: " + message + "\n"
-                print "!!! FAILED TEST: " + message + "\n"
-                print "!!! FAILED TEST: " + message + "\n"
-                print "!!! FAILED TEST: " + message + "\n"
-                print "!!! FAILED TEST: " + message + "\n"
-                print "!!! FAILED TEST: " + message + "\n"
-                print "!!! FAILED TEST: " + message + "\n"
-                print "!!! FAILED TEST: " + message + "\n"
+                print "!!! FAILED TEST: " + message + " !!!\n"
+                print "!!! FAILED TEST: " + message + " !!!\n"
+                print "!!! FAILED TEST: " + message + " !!!\n"
                 fail_count += 1
 
         test_result = False
@@ -342,9 +336,10 @@ if __name__ == "__main__":
             if not test_result:
                 break # stop the loop if an invalid board failed to trigger valid_board()
 
-        # displays total failed count:
+        # displays test result summary:
         time_end = time.time()
         print "Ran a total of " + str(test_count) + " tests."
         print "Test runtime: " + str(time_end - time_start) + " seconds"
         print "Total tests passed: " + str(pass_count)
         print "Total tests failed: " + str(fail_count)
+        print "\n"
