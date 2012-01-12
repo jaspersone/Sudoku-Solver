@@ -3,15 +3,17 @@ import copy
 import random
 
 # The Sudoku Board Class is simple board consisting of a 2d array
-class Board(object):
+class Sudoku_Board(object):
     def __init__(self):
-        self.board = [0] * 9
+        self.board_size = 9
+        self.block_size = 3
+        self.board = [0] * self.board_size
         self.isValidBoard = True
         self.givens = {} # dictionary to hold given spots with coordinate (tuple) as key and (int) 0-9 as value
         self.found_values = {} # similar to givens, but these are logically found values (non-guesses)
         self.guesses = {} # similar to givens, except the 
-        for r in xrange(9): # prefill the board with zeros
-            self.board[r] = [0] * 9
+        for r in xrange(self.board_size): # prefill the board with zeros
+            self.board[r] = [0] * self.board_size
 
     def set(self, row, col, value):
         self.board[row][col] = value
@@ -22,15 +24,16 @@ class Board(object):
     def get_row(self, row):
         return copy.deepcopy(self.board[row])
     def get_col(self, col):
-        return copy.deepcopy([self.board[i][col] for i in range(9)])
+        return copy.deepcopy([self.board[i][col] for i in range(self.board_size)])
 
     # input: a starting x and y value inside of the board
     # output: list of numbers inside sub_block of size block_size * block_size
     # time complexity: n = block_size, O(n^2)
     def get_sub_block(self, start_x, start_y):
         # normalize start x and start y to be the starting block value
-        block_size = 3 # block size is width and height of square sub-block of numbers
-        start_x, start_y = start_x / block_size, start_y / block_size
+        block_size = self.block_size # block size is width and height of square sub-block of numbers
+        start_x = (start_x / block_size) * block_size
+        start_y = (start_y / block_size) * block_size
         temp = []
         for row in xrange(block_size):
             for col in xrange(block_size):
@@ -40,7 +43,8 @@ class Board(object):
     # input: a list of numbers (row, col, or sub_block) and an excluded value
     # output: returns True if a duplicate is found in the list (ignoring duplicates of the excluded value)
     # time complexity: n = size of list, O(n log n) 
-    def has_duplicate(self, mylist, excluded_value = 0):
+    @staticmethod
+    def has_duplicate(mylist, excluded_value = 0):
         assert mylist.__class__ == list
         mylist.sort()
         i = 0
@@ -63,23 +67,26 @@ class Board(object):
         assert (0 <= col < 9)
         if value != 0: # 0 symbolizes an empty box
             # check row
+            temp_row = get_row(row)
+            temp_row[col] = value # try the current value at position
+            if Sudoku_Board.Board.has_duplicate(temp_row):
+                return False
             # check col
+            temp_col = get_col(col)
+            temp_col[row] = value # try the current value at position
+            if Sudoku_Board.has_duplicate(temp_col):
+                return False
             # check sub_block
             temp_sub_block = get_sub_block(row, col)
-            for i in xrange(9):
-                # checks for other numbers in the same row or col that match value
-                # please note that it excludes the box of current selected row and col
-                # using the and i != statements
-                if self.get(row, i) == value and i != col:
-                    return False
-                if self.get(i, col) == value and i != row:
-                    return False
+            temp_sub_block[(row % self.block_size) * self.block_size + col] = value # try the current value at position
+
+
         return True # return true if a duplicate is not found or value == 0
 
     def valid_board(self):
         # check rows
         for row in xrange(9):
-            if self.has_duplicate(self.board[row][:]): # pass list by value
+            if Sudoku_Board.has_duplicate(self.board[row][:]): # pass list by value
                 print "Duplicate found in row: " + str(row)
                 print self.board[row]
                 return False
@@ -88,18 +95,20 @@ class Board(object):
             tempcol = []
             for row in xrange(9): # build a temporary column
                 tempcol.append(self.get(row, col))
-            if self.has_duplicate(tempcol):
+            if Sudoku_Board.has_duplicate(tempcol):
                 print "Duplicate found in col: " + str(col) 
                 print tempcol
                 return False
         # check sub blocks
-        start_vals_x = list(xrange(9))[::3]
-        start_vals_y = list(xrange(9))[::3]
+        start_vals_x = list(xrange(self.board_size))[::self.block_size]
+        start_vals_y = start_vals_x
         for x in start_vals_x:
             for y in start_vals_y:
-                if self.has_duplicate(self.get_sub_block(x,y)):
-                    print "Duplicate found in sub block: [" + str(x) + ", " + str(y) + "]"
+                if Sudoku_Board.has_duplicate(self.get_sub_block(x,y)):
+                    print "\n"
                     print self
+                    print "Duplicate found in sub block: [" + str(x) + ", " + str(y) + "]"
+                    print "Sub block: " + str(self.get_sub_block(x,y)) + "\n"
                     return False
         # if no duplicate is found, return True
         return True
@@ -188,20 +197,39 @@ class Board(object):
 if __name__ == "__main__":
     print "Running sudoku solver as main.\n"
     TEST = True
-    # This is for testing
+   # This is for testing
     if TEST:
-
+        import time
+        test_count = 0
+        pass_count = 0
+        fail_count = 0
+        time_start = time.time()
+ 
         def test_message(passed_test, message, *args):
+            global pass_count
+            global fail_count
+            global test_count
+            test_count += 1
             if passed_test:
                 print ">>> PASSED TEST: " + message + "\n"
+                pass_count += 1
             else:
                 print "!!! FAILED TEST: " + message + "\n"
+                print "!!! FAILED TEST: " + message + "\n"
+                print "!!! FAILED TEST: " + message + "\n"
+                print "!!! FAILED TEST: " + message + "\n"
+                print "!!! FAILED TEST: " + message + "\n"
+                print "!!! FAILED TEST: " + message + "\n"
+                print "!!! FAILED TEST: " + message + "\n"
+                print "!!! FAILED TEST: " + message + "\n"
+                print "!!! FAILED TEST: " + message + "\n"
+                fail_count += 1
 
         test_result = False
         print "TESTING SUDOKU SOLVER\n"
 
         print "Testing Baord Creation"
-        board1 = Board()
+        board1 = Sudoku_Board()
         print board1
                    
         # TEST: board initialized with all values equal to zero.
@@ -217,11 +245,13 @@ if __name__ == "__main__":
         m = "is this a valid board"
         test_result = board1.valid_board()
         test_message(test_result, m)
- 
+
+        # TODO: Potential problem with this test or valid_board() method
         # TEST: Get and Set
         print "Testing Board Validation on Valid Board" 
         nums_list = list(xrange(1,10))
         for row in xrange(9):
+            # this if statement prevents the revolving of duplicates into every 3rd row by offsetting value by 1
             if row != 0 and row % 3 == 0:
                 nums_list.insert(0, nums_list.pop()) # increment for the next row
             for col in xrange(9):
@@ -233,7 +263,7 @@ if __name__ == "__main__":
         m = "is this a valid board"
         test_result = board1.valid_board()
         test_message(test_result, m)
-        
+         
         m = "get() method"
         test_result = True
         for row in xrange(9):
@@ -312,4 +342,9 @@ if __name__ == "__main__":
             if not test_result:
                 break # stop the loop if an invalid board failed to trigger valid_board()
 
-
+        # displays total failed count:
+        time_end = time.time()
+        print "Ran a total of " + str(test_count) + " tests."
+        print "Test runtime: " + str(time_end - time_start) + " seconds"
+        print "Total tests passed: " + str(pass_count)
+        print "Total tests failed: " + str(fail_count)
