@@ -132,6 +132,7 @@ class Sudoku_Board(object):
         print ">>>> Finding given values:" 
         self.find_givens()
         # loop through board and find all possible values for each slot, ignoring given slots
+        changes_made = False
         for row in xrange(self.board_size):
             for col in xrange(self.board_size):
                 temp_key = (row,col)
@@ -153,6 +154,7 @@ class Sudoku_Board(object):
                     # assume this board is not solveable
                 # if there is only 1 possible value 
                 if num_guesses == 1:
+                    changes_made = True # flag to verify that changes have been made to the givens list
                     val = self.guesses.pop((row, col)) # gets val and removes entry TODO: make sure this works
                     # add tuple (row, col) to self.givens as key and value as value
                     self.givens[(row, col)] = val
@@ -162,6 +164,8 @@ class Sudoku_Board(object):
                     # move onto the next one
                 else:
                     pass # skip if the current spot is a given value
+        if changes_made: # if we successfully added values, see with new givens if we can't add some more
+            self.find_values()
 
     def solve_board(self):
         ''' solve_board sets up the board to be solved, including validating the original board,
