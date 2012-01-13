@@ -7,6 +7,7 @@ class Sudoku_Board(object):
     def __init__(self):
         self.board_size = 9
         self.block_size = 3
+        self.easy_setting = (self.board_size * self.board_size) / 2
         self.board = [0] * self.board_size
         self.isValidBoard = True
         self.givens = {} # dictionary to hold given spots with coordinate (tuple) as key and (int) 0-9 as value
@@ -38,6 +39,60 @@ class Sudoku_Board(object):
             for col in xrange(block_size):
                 temp.append(self.get(start_x + row, start_y + col))
         return temp
+    # input: number of spaces to leave as 0's (int)
+    # output: generates a psuedo-random (legal) board with the number of spaces specified missing
+    @staticmethod
+    def generate_random_board(blank_spaces = None):
+        random_board = Sudoku_Board()
+        if blank_spaces == None:
+            blank_spaces = random_board.easy_setting # default board blank spaces = 1/2 of spaces available
+        choices = range(1,random_board.board_size + 1)
+        line = []
+        # make a randomly ordered line of numbers 1 - 9
+        while len(choices) > 0:
+            num = random.randint(0,len(choices) - 1)
+            line.append(choices.pop(num))
+
+        # permute this list to create a random board that is completely filled out
+        random_board.board = random_board.generate_board_using_list(line)
+        # verify this is a valid board
+        if random_board.valid_board():
+            # randomly remove number of blank_space specified by user (or by default about half)
+            count = blank_spaces
+            while count > 0:
+                row = random.randint(0, random_board.board_size - 1)
+                col = random.randint(0, random_board.board_size - 1)
+                if random_board.get(row,col) != 0:
+                    random_board.set(row,col, 0) # make board at (row, col) = 0
+                    count -= 1
+            # verify board is still valid
+            if random_board.valid_board():
+                return random_board
+            else:
+                print ">>> Started with a random board, but had problems during removing numbers!!!"
+                print random_board
+                return generate_random_board(blank_spaces)
+        else:
+            print ">>> !!! problem generating random board, will try again !!!"
+            return generate_random_board(blank_spaces)
+
+    # input: a first line (list) which is the length of the board
+    # output: a 2d list (board) with the line permuted to be a valid sudoku board
+    def generate_board_using_list(self, first_line):
+        assert type(first_line) == list
+        assert len(first_line) == self.board_size
+        permuted_board = [first_line]
+        
+        for i in xrange(1, self.board_size): # leave first row alone
+            next_line = copy.deepcopy(permuted_board[-1])
+            if i % self.block_size == 0: # shift by one if start of a new block
+                next_line.append(next_line.pop(0))
+            else: # normal permutation of 3 spaces
+                for x in xrange(self.block_size):
+                    next_line.append(next_line.pop(0))
+            permuted_board.append(next_line)
+        return permuted_board
+
 
     # input: a list of numbers (row, col, or sub_block) and an excluded value
     # output: returns True if a duplicate is found in the list (ignoring duplicates of the excluded value)
@@ -146,7 +201,7 @@ class Sudoku_Board(object):
                     else: # if (rol, col) key is found in guesses
                         # verify values work with current board
                         self.guesses[temp_key] = [ v for v in self.guesses[temp_key] if self.validate_move(row, col, v)
-
+]
                 num_guesses = len(self.guesses[temp_key])
                 # if there are no possible values
                 if num_guesses < 1:
@@ -160,10 +215,6 @@ class Sudoku_Board(object):
                     self.givens[(row, col)] = val
                     # add value to self.board[row][col] = value
                     self.board[row][col] = val
-                # else
-                    # move onto the next one
-                else:
-                    pass # skip if the current spot is a given value
         if changes_made: # if we successfully added values, see with new givens if we can't add some more
             self.find_values()
 
@@ -260,14 +311,14 @@ if __name__ == "__main__":
         # TODO: Potential problem with this test or valid_board() method
         # TEST: Get and Set
         print "Testing Board Validation on Valid Board" 
-        nums_list = list(xrange(1,10))
-        for row in xrange(9):
+        nums_list = list(xrange(1,board1.board_size + 1))
+        for row in xrange(board1.board_size):
             # this if statement prevents the revolving of duplicates into every 3rd row by offsetting value by 1
-            if row != 0 and row % 3 == 0:
+            if row != 0 and row % board1.block_size == 0:
                 nums_list.insert(0, nums_list.pop()) # increment for the next row
-            for col in xrange(9):
+            for col in xrange(board1.board_size):
                 board1.board[row][col] = nums_list[col]
-            for i in xrange(3):
+            for i in xrange(board1.block_size):
                 nums_list.insert(0, nums_list.pop()) # places last value of nums_list in first spot
         print board1
 
@@ -352,6 +403,19 @@ if __name__ == "__main__":
 
             if not test_result:
                 break # stop the loop if an invalid board failed to trigger valid_board()
+
+        # Test: find_givens and find_values()
+        # loop of tests
+        board2 = Sudoku_Board.generate_random_board()
+        board2.board = copy.deepcopy(board1.board)
+        print "Testing find_givens() and find_values(), here is initial master board:"
+
+        #for (x in xrange(100)):
+        #    pass
+            # build a solveable board
+            # run find_givens()
+            # run find_values()
+
 
         # displays test result summary:
         time_end = time.time()
