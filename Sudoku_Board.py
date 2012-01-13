@@ -67,6 +67,7 @@ class Sudoku_Board(object):
                     count -= 1
             # verify board is still valid
             if random_board.valid_board():
+                random_board.find_givens()
                 return random_board
             else:
                 print ">>> Started with a random board, but had problems during removing numbers!!!"
@@ -200,8 +201,7 @@ class Sudoku_Board(object):
                         self.guesses[temp_key] = [ v for v in choices if self.validate_move(row, col, v) ]
                     else: # if (rol, col) key is found in guesses
                         # verify values work with current board
-                        self.guesses[temp_key] = [ v for v in self.guesses[temp_key] if self.validate_move(row, col, v)
-]
+                        self.guesses[temp_key] = [ v for v in self.guesses[temp_key] if self.validate_move(row, col, v)]
                 num_guesses = len(self.guesses[temp_key])
                 # if there are no possible values
                 if num_guesses < 1:
@@ -268,6 +268,7 @@ if __name__ == "__main__":
    # This is for testing
     if TEST:
         import time
+        LOOP_COUNT = 50
         test_count = 0
         pass_count = 0
         fail_count = 0
@@ -378,7 +379,7 @@ if __name__ == "__main__":
         m = "check col"
 
         # flip two values
-        for count in xrange(100):
+        for count in xrange(LOOP_COUNT):
             # generate random (x,y) coords
             # since swapping with the right value, I only generate rand ints to 7 (to prevent accessing cols
             #   outside of the range of the board
@@ -403,19 +404,40 @@ if __name__ == "__main__":
 
             if not test_result:
                 break # stop the loop if an invalid board failed to trigger valid_board()
+        
+        # Test: Generate Random Valid Boards
+        for x in xrange(LOOP_COUNT):
+            board1 = Sudoku_Board.generate_random_board(random.randint(0, board1.board_size * board1.board_size))
+            print board1
+            m = "generate random board: " + str(x)
+            test_result = board1.valid_board()
+            test_message(test_result, m)
 
-        # Test: find_givens and find_values()
+        # Test: find_givens
         # loop of tests
-        board2 = Sudoku_Board.generate_random_board()
-        board2.board = copy.deepcopy(board1.board)
-        print "Testing find_givens() and find_values(), here is initial master board:"
+        print "Testing find_givens()"
 
-        #for (x in xrange(100)):
-        #    pass
-            # build a solveable board
-            # run find_givens()
-            # run find_values()
+        for x in xrange(LOOP_COUNT):
+            board1 = Sudoku_Board.generate_random_board()
+            # insure that all givens are added to list
+            board1.find_givens()
+            test_list = board1.givens.values()
+            test_list.sort()
+            control_list = []
+            # make a list of all givens
+            for row in board1.board:
+                for val in row:
+                    if val != 0:
+                        control_list.append(val)
+            control_list.sort()
+            t_length = len(test_list)
+            c_length = len(control_list)
+            test_result = t_length == c_length and all(control_list[x] == test_list[x] for x in xrange(t_length))
 
+            print board1
+            m = "find all givens " + str(x)
+            test_result = board1.valid_board()
+            test_message(test_result, m)
 
         # displays test result summary:
         time_end = time.time()
