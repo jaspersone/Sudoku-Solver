@@ -122,18 +122,23 @@ class Sudoku_Board(object):
         assert (0 <= col < self.board_size)
         if value != 0: # 0 symbolizes an empty box
             # check row
-            temp_row = get_row(row)
+            temp_row = self.get_row(row)
             temp_row[col] = value # try the current value at position
-            if Sudoku_Board.Board.has_duplicate(temp_row):
+            if Sudoku_Board.has_duplicate(temp_row):
                 return False
             # check col
-            temp_col = get_col(col)
+            temp_col = self.get_col(col)
             temp_col[row] = value # try the current value at position
             if Sudoku_Board.has_duplicate(temp_col):
                 return False
             # check sub_block
-            temp_sub_block = get_sub_block(row, col)
-            temp_sub_block[(row % self.block_size) * self.block_size + col] = value # try the current value at position
+            temp_sub_block = self.get_sub_block(row, col)
+            pos = (row % self.block_size) * self.block_size + col
+            print ">>>> Temp Sub Block: " + str(temp_sub_block)
+            print "  >> From (row,col): " + str((row,col))
+            print "  >> Searching for : " + str(value)
+            print ">>>> Position in sub-block trying to be accessed: " + str(pos) + "\n"
+            temp_sub_block[pos] = value # try the current value at position
 
 
         return True # return true if a duplicate is not found or value == 0
@@ -202,19 +207,19 @@ class Sudoku_Board(object):
                     else: # if (rol, col) key is found in guesses
                         # verify values work with current board
                         self.guesses[temp_key] = [ v for v in self.guesses[temp_key] if self.validate_move(row, col, v)]
-                num_guesses = len(self.guesses[temp_key])
-                # if there are no possible values
-                if num_guesses < 1:
-                    print ">>> No possible values for position: " + str((row, col))
-                    # assume this board is not solveable
-                # if there is only 1 possible value 
-                if num_guesses == 1:
-                    changes_made = True # flag to verify that changes have been made to the givens list
-                    val = self.guesses.pop((row, col)) # gets val and removes entry TODO: make sure this works
-                    # add tuple (row, col) to self.givens as key and value as value
-                    self.givens[(row, col)] = val
-                    # add value to self.board[row][col] = value
-                    self.board[row][col] = val
+                    num_guesses = len(self.guesses[temp_key])
+                    # if there are no possible values
+                    if num_guesses < 1:
+                        print ">>> No possible values for position: " + str((row, col))
+                        # assume this board is not solveable
+                    # if there is only 1 possible value 
+                    if num_guesses == 1:
+                        changes_made = True # flag to verify that changes have been made to the givens list
+                        val = self.guesses.pop((row, col)) # gets val and removes entry TODO: make sure this works
+                        # add tuple (row, col) to self.givens as key and value as value
+                        self.givens[(row, col)] = val
+                        # add value to self.board[row][col] = value
+                        self.board[row][col] = val
         if changes_made: # if we successfully added values, see with new givens if we can't add some more
             self.find_values()
 
