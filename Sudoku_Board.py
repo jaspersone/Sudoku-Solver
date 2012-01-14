@@ -25,6 +25,14 @@ class Sudoku_Board(object):
         return copy.deepcopy(self.board[row])
     def get_col(self, col):
         return copy.deepcopy([self.board[i][col] for i in range(self.board_size)])
+    
+    # input: when called by a Sudoku Board (self)
+    # output: produce a deep copy, which must be assigned ie: new_board = self.copy()
+    def copy(self):
+        the_copy = Sudoku_Board()
+        the_copy.board = copy.deepcopy(self.board)
+        the_copy.givens = copy.deepcopy(self.givens)
+        the_copy.guesses = copy.deepcopy(self.guesses)
 
     # input: a starting x and y value inside of the board
     # output: list of numbers inside sub_block of size block_size * block_size
@@ -113,7 +121,7 @@ class Sudoku_Board(object):
     # TODO: this potentially has problems.
     # TODO: check sub_block for duplicates
     # TODO: figure out how you are going to exclude the current selected position.
-    def validate_move(self, row, col, value):
+    def valid_move(self, row, col, value):
         '''When passed a row, col, and value, returns True if the move is valid and there are no
         duplicates of value found in the row and col selected, otherwise if a match to Value is
         found, this function will return False.''' 
@@ -201,10 +209,10 @@ class Sudoku_Board(object):
                         self.guesses[temp_key] = []
                         # only add values that are valid to the guesses list
                         choices = xrange(1, self.board_size + 1) # possible values to insert
-                        self.guesses[temp_key] = [ v for v in choices if self.validate_move(row, col, v) ]
+                        self.guesses[temp_key] = [ v for v in choices if self.valid_move(row, col, v) ]
                     else: # if (rol, col) key is found in guesses
                         # verify values work with current board
-                        self.guesses[temp_key] = [ v for v in self.guesses[temp_key] if self.validate_move(row, col, v)]
+                        self.guesses[temp_key] = [ v for v in self.guesses[temp_key] if self.valid_move(row, col, v)]
                     num_guesses = len(self.guesses[temp_key])
                     # if there are no possible values
                     if num_guesses < 1:
@@ -229,26 +237,61 @@ class Sudoku_Board(object):
         assert self.__class__ == Sudoku_Board
         if self.valid_board():
             self.find_givens() # finds givens of board
-            temp = Board() # make a new copy of board
+            temp = Sudoku_Board() # make a new copy of board
             temp.board = copy.deepcopy(self.board)
             print temp.givens
             # find logical givens
             temp.find_values()
             # starting making guesses to solve the board
             print ">>> Starting recursive board solution search"
-            return temp.solve_board_helper()
+            keys = temp.guesses.keys()
+            keys.sort() # TODO: try messing with this to see if timing improves
+            print ">>>> These are the keys: " + str(keys)
+            return temp.solve_board_helper(keys)
         else:
             print ">>> This is not a valid board:"
             print self
             return None
-    
-    def solve_board_helper(self):
+
+    # input: a valid board
+    # output: True, if board if valid and contains no spaces (0's), otherwise False
+    def is_complete(self):
+        assert self.__class__ == Sudoku_Board
         if self.valid_board():
-            #  make a deep copy of the original board
-            solution = Board()
-            solution.board = copy.deepcopy(curr_board)
+            # check for zeros
+            for row in self.board:
+                for num in row:
+                    if num == 0:
+                        return False
+            else:
+                return True
         else:
-            return None
+            return False
+
+    # input: assumes that the board's guesses dictionary is already filled out by running find_values()
+    # output: a solved board, or None if the board is not solveable
+    def solve_board_helper(self, keys):
+        print 'inside solve_board_helper()'
+        assert self.__class__ == Sudoku_Board
+        if len(keys) == 0:
+            # check board for completeness
+            if self.is_complete():
+                return self
+            else:            
+                return None
+        else: # assume there are guesses left
+            first_key = keys.pop() # grab first of the set of keys
+            for guess in first_key:
+                temp_row = first_key[0]
+                temp_col = first_key[1]
+                if self.valid_move(temp_row, temp_col, guess):
+                    # if the option is still a valid choice try it
+                    solution = self.copy()
+                    solution.set(temp_row, temp_col, guess)
+                    solution.givens[first_key] = guess
+                    solution = solution.solve_board_helper(keys)
+                if solution != None:
+                    return solution
 
     def clear(self):
         self.givens.clear() # remove all given values
