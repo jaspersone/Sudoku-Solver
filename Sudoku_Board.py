@@ -133,14 +133,12 @@ class Sudoku_Board(object):
                 return False
             # check sub_block
             temp_sub_block = self.get_sub_block(row, col)
-            pos = (row % self.block_size) * self.block_size + col
-            print ">>>> Temp Sub Block: " + str(temp_sub_block)
-            print "  >> From (row,col): " + str((row,col))
-            print "  >> Searching for : " + str(value)
-            print ">>>> Position in sub-block trying to be accessed: " + str(pos) + "\n"
+            pos = (row % self.block_size) * self.block_size + (col % self.block_size)
+            #print ">>>> Temp Sub Block: " + str(temp_sub_block)
+            #print "  >> From (row,col): " + str((row,col))
+            #print "  >> Searching for : " + str(value)
+            #print ">>>> Position in sub-block trying to be accessed: " + str(pos) + "\n"
             temp_sub_block[pos] = value # try the current value at position
-
-
         return True # return true if a duplicate is not found or value == 0
 
     def valid_board(self):
@@ -215,7 +213,8 @@ class Sudoku_Board(object):
                     # if there is only 1 possible value 
                     if num_guesses == 1:
                         changes_made = True # flag to verify that changes have been made to the givens list
-                        val = self.guesses.pop((row, col)) # gets val and removes entry TODO: make sure this works
+                        val = self.guesses.pop((row, col))[0] # gets val and removes entry TODO: make sure this works
+                        print ">>> Adding new value to board: " + str(val)
                         # add tuple (row, col) to self.givens as key and value as value
                         self.givens[(row, col)] = val
                         # add value to self.board[row][col] = value
@@ -258,11 +257,22 @@ class Sudoku_Board(object):
                 self.board[row][col] = 0
 
     def __repr__(self):
-        result = ""
+        result = '    0   1   2   3   4   5   6   7   8\n--|-----------|-----------|-----------|\n'
         for i in xrange(self.board_size):
-            result += self.board[i].__repr__()
-            if i != 8:
-                result += '\n' 
+            line = ''
+            for num in self.board[i]:
+                if num == 0:
+                    line += '    ' # display a blank (only for display purposes)
+                else:
+                    line += str(num) + '   '
+            result += str(i) + '   ' + line + '\n'
+            if (i+1) % 3 == 0:
+                if i != 8:
+                    result += '--|-----------|-----------|-----------|\n'
+                else:
+                    result += '--|-----------|-----------|-----------|'
+            else:
+                result += '  |           |           |           |\n'
         return result
 
 # Program runs from here
