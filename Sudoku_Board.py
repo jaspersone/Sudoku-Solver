@@ -33,6 +33,7 @@ class Sudoku_Board(object):
         the_copy.board = copy.deepcopy(self.board)
         the_copy.givens = copy.deepcopy(self.givens)
         the_copy.guesses = copy.deepcopy(self.guesses)
+        return the_copy
 
     # input: a starting x and y value inside of the board
     # output: list of numbers inside sub_block of size block_size * block_size
@@ -180,7 +181,23 @@ class Sudoku_Board(object):
                     return False
         # if no duplicate is found, return True
         return True
-    
+
+    # input: a Sudoku Board
+    # output: True, if board if valid and contains no spaces (0's), otherwise False
+    def is_complete(self):
+        assert self.__class__ == Sudoku_Board
+        if self.valid_board():
+            # check for zeros
+            for row in self.board:
+                for num in row:
+                    if num == 0:
+                        return False
+            else:
+                return True
+        else:
+            return False
+
+   
     # TODO: This find givens will be made obsolete after inputing givens is created.  It is used
     #       currently by solve_board
     def find_givens(self):
@@ -222,7 +239,7 @@ class Sudoku_Board(object):
                     if num_guesses == 1:
                         changes_made = True # flag to verify that changes have been made to the givens list
                         val = self.guesses.pop((row, col))[0] # gets val and removes entry TODO: make sure this works
-                        print ">>> Adding new value to board: " + str(val)
+                        print ">>> Adding new value to board: " + str(val) + " at " + str(temp_key)
                         # add tuple (row, col) to self.givens as key and value as value
                         self.givens[(row, col)] = val
                         # add value to self.board[row][col] = value
@@ -237,8 +254,7 @@ class Sudoku_Board(object):
         assert self.__class__ == Sudoku_Board
         if self.valid_board():
             self.find_givens() # finds givens of board
-            temp = Sudoku_Board() # make a new copy of board
-            temp.board = copy.deepcopy(self.board)
+            temp = self.copy() # make a new deep copy of board
             print temp.givens
             # find logical givens
             temp.find_values()
@@ -253,21 +269,6 @@ class Sudoku_Board(object):
             print self
             return None
 
-    # input: a valid board
-    # output: True, if board if valid and contains no spaces (0's), otherwise False
-    def is_complete(self):
-        assert self.__class__ == Sudoku_Board
-        if self.valid_board():
-            # check for zeros
-            for row in self.board:
-                for num in row:
-                    if num == 0:
-                        return False
-            else:
-                return True
-        else:
-            return False
-
     # input: assumes that the board's guesses dictionary is already filled out by running find_values()
     # output: a solved board, or None if the board is not solveable
     def solve_board_helper(self, keys):
@@ -276,28 +277,35 @@ class Sudoku_Board(object):
         if len(keys) == 0:
             # check board for completeness
             if self.is_complete():
+                print 'Yay, found a solution!!!'
                 return self
-            else:            
+            else:
+                print 'Did not find a solution!!!'
                 return None
         else: # assume there are guesses left
+            print 'inside solve_board_helper() else'
             first_key = keys.pop() # grab first of the set of keys
+            solution = None
             for guess in first_key:
                 temp_row = first_key[0]
                 temp_col = first_key[1]
                 if self.valid_move(temp_row, temp_col, guess):
                     # if the option is still a valid choice try it
-                    solution = self.copy()
-                    solution.set(temp_row, temp_col, guess)
-                    solution.givens[first_key] = guess
-                    solution = solution.solve_board_helper(keys)
-                if solution != None:
-                    return solution
+                    self.set(temp_row, temp_col, guess)
+                    self.givens[first_key] = guess
+                    solution = self.solve_board_helper(keys)
+                print 'trying to add ' + str(guess) + ' at: ' + str(first_key)
+                print self
+            return solution
 
     def clear(self):
         self.givens.clear() # remove all given values
         for row in xrange(self.board_size):
             for col in xrange(self.board_size):
                 self.board[row][col] = 0
+
+    def __eq__(self, other):
+        return vars(self) == vars(other)
 
     def __repr__(self):
         result = '    0   1   2   3   4   5   6   7   8\n--|-----------|-----------|-----------|\n'
@@ -416,7 +424,8 @@ if __name__ == "__main__":
             m = "invalid board check (rows) " + str(count)
             test_result = not board1.valid_board()
             test_message(test_result, m)
-            
+ 
+           
             # return the old value
             board1.set(temp_coord_x, temp_coord_y, original_val)
 
@@ -435,6 +444,34 @@ if __name__ == "__main__":
             print "Col " + str(col) + ":"
             print board1.get_col(col)
         m = "check col"
+        
+        # TEST: copy()
+        print "TESTING: copy()"
+        for count in xrange(LOOP_COUNT):
+            board2 = Sudoku_Board.generate_random_board()
+            board3 = board2.copy()
+
+            # test that it is actually a new copy
+            row = random.randint(0, board3.board_size - 1)
+            col = random.randint(0, board3.board_size - 1)
+            temp_val = board3.get(row, col)
+            temp_replacement = random.randint(1, board3.board_size)
+            while (temp_val == temp_replacement):
+                temp_replacement = random.randint(1, board3.board_size)
+            board3.set(row,col,temp_replacement)
+            
+            m = "new copy of board is new object " + str(count)
+            test_result = board2.get(row,col) != board3.get(row,col)
+            test_message(test_result, m)
+            
+            # return old value
+            board3.set(row,col,temp_val)
+
+            # test that new board is exactly the same as old board
+            m = "all values of copied board are equal" + str(count)
+            test_result = board2 == board3
+            test_message(test_result, m)
+ 
 
         # flip two values
         for count in xrange(LOOP_COUNT):
