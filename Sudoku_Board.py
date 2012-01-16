@@ -148,6 +148,8 @@ class Sudoku_Board(object):
             #print "  >> Searching for : " + str(value)
             #print ">>>> Position in sub-block trying to be accessed: " + str(pos) + "\n"
             temp_sub_block[pos] = value # try the current value at position
+            if Sudoku_Board.has_duplicate(temp_sub_block):
+                return False
         return True # return true if a duplicate is not found or value == 0
 
     def valid_board(self):
@@ -208,6 +210,7 @@ class Sudoku_Board(object):
                 if 0 < tempval <= self.board_size: # ignore non-valid numbers
                     self.givens[(row,col)] = tempval
 
+    # TODO: Need to catch when a sub_block has 8 values, to fill in the 9th
     # input: a valid sudoku board
     # output: none, but will mutate self.givens by adding other logical values.
     def find_values(self):
@@ -221,27 +224,29 @@ class Sudoku_Board(object):
             for col in xrange(self.board_size):
                 temp_key = (row,col)
                 if not self.givens.has_key(temp_key):
-                    # if not in guesses, find all possible values for that position
+                    # if not in givens, see if it is in guesses
                     if not self.guesses.has_key(temp_key):
+                        # if not in guesses, add key and find all possible values for that position
+                        changes_made = True
                         self.guesses[temp_key] = []
                         # only add values that are valid to the guesses list
                         choices = xrange(1, self.board_size + 1) # possible values to insert
                         self.guesses[temp_key] = [ v for v in choices if self.valid_move(row, col, v) ]
                     else: # if (rol, col) key is found in guesses
-                        # verify values work with current board
+                        # verify values work with current board and remove values that are not valid
                         self.guesses[temp_key] = [ v for v in self.guesses[temp_key] if self.valid_move(row, col, v)]
                     num_guesses = len(self.guesses[temp_key])
                     # if there are no possible values
                     if num_guesses < 1:
-                        print ">>> No possible values for position: " + str((row, col))
+                        print ">>> No possible values for position: " + str(temp_key)
                         # assume this board is not solveable
                     # if there is only 1 possible value 
                     if num_guesses == 1:
                         changes_made = True # flag to verify that changes have been made to the givens list
-                        val = self.guesses.pop((row, col))[0] # gets val and removes entry TODO: make sure this works
+                        val = self.guesses.pop(temp_key)[0] # gets val and removes entry TODO: make sure this works
                         print ">>> Adding new value to board: " + str(val) + " at " + str(temp_key)
                         # add tuple (row, col) to self.givens as key and value as value
-                        self.givens[(row, col)] = val
+                        self.givens[temp_key] = val
                         # add value to self.board[row][col] = value
                         self.board[row][col] = val
         if changes_made: # if we successfully added values, see with new givens if we can't add some more
