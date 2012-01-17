@@ -192,10 +192,8 @@ class Sudoku_Board(object):
             # check for zeros
             for row in self.board:
                 for num in row:
-                    if num == 0:
-                        return False
-            else:
-                return True
+                    if num == 0: return False
+            return True
         else:
             return False
 
@@ -256,10 +254,6 @@ class Sudoku_Board(object):
             finding the given values, then passing on a copy of the board to recursive helper
             function solve_board_helper.'''
         assert self.__class__ == Sudoku_Board
-        print '\n\n\n'
-        print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-        print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-        print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
         print self
         if self.valid_board():
             self.find_givens() # finds givens of board
@@ -267,10 +261,8 @@ class Sudoku_Board(object):
             # find logical givens
             temp.find_values()
             # starting making guesses to solve the board
-            print ">>> Starting recursive board solution search"
             keys = temp.guesses.keys()
             keys.sort() # TODO: try messing with this to see if timing improves
-            print ">>>> These are the keys:\n" + str(keys)
             return temp.solve_board_helper(keys)
         else:
             print ">>> This is not a valid board:"
@@ -280,41 +272,32 @@ class Sudoku_Board(object):
     # input: assumes that the board's guesses dictionary is already filled out by running find_values()
     # output: a solved board, or None if the board is not solveable
     def solve_board_helper(self, keys):
-        print 'inside solve_board_helper()'
-        print self
-        for key in keys:
-            print str(key) + ': ' + str(self.guesses[key]) + '\n'
         assert self.__class__ == Sudoku_Board
-        if len(keys) == 0 or self is None:
-            # check board for completeness
+        if len(keys) < 1:
             if self.is_complete():
-                print 'Yay, found a solution!!!\n\n\n\n'
+                print "!!! FOUND SOLUTION !!!"
+                print self
                 return self
             else:
-                print 'Did not find a solution!!!\n\n\n\n'
                 return None
         else: # assume there are guesses left
-            print 'inside solve_board_helper() else'
             first_key = keys.pop() # grab first of the set of keys
-            solution = None
-            for guess in self.guesses[first_key]:
-                temp_row = first_key[0]
-                temp_col = first_key[1]
-                print 'Looking at: ' + str((temp_row, temp_col)) + ' => ' + str(self.guesses[first_key])
+            curr_guesses = copy.deepcopy(self.guesses[first_key])
+            temp_row = first_key[0]
+            temp_col = first_key[1]
+            for guess in curr_guesses:
                 if self.valid_move(temp_row, temp_col, guess):
-                    # if the option is still a valid choice try it
-                    print '>>> inside solve_board_helper > else > valid_move'
+                    # if the option is still a valid choice add it and try it
                     self.set(temp_row, temp_col, guess)
                     self.givens[first_key] = guess
-                    print '>>> Adding guess ' + str(guess) + ' at: ' + str(first_key)
-                    solution = self.solve_board_helper(copy.deepcopy(keys))
+                    possible_solution =  self.solve_board_helper(copy.deepcopy(keys))
+                    if not possible_solution is None:
+                        return possible_solution
                 else:
-                    print '>>> Skipped adding guess: ' + str(guess) + '\n'
-                if solution is not None and solution.is_complete():
-                    return solution
-            if solution is None and self.givens.has_key(first_key):
-                print 'Could not find a fit in: ' + str(first_key) + ' => ' + str(self.guesses[first_key])
+                    pass # skip adding this guess
+            if self.givens.has_key(first_key):
                 self.givens.pop(first_key)
+                self.set(temp_row, temp_col, 0)
 
     def clear(self):
         self.givens.clear() # remove all given values
@@ -352,7 +335,7 @@ if __name__ == "__main__":
    # This is for testing
     if TEST:
         import time
-        LOOP_COUNT = 50
+        LOOP_COUNT = 10
         test_count = 0
         pass_count = 0
         fail_count = 0
