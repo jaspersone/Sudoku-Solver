@@ -262,7 +262,10 @@ class Sudoku_Board(object):
             temp.find_values()
             # starting making guesses to solve the board
             keys = temp.guesses.keys()
-            keys.sort() # TODO: try messing with this to see if timing improves
+            #keys.sort() # TODO: try messing with this to see if timing improves
+            keys = sorted(keys, key=lambda key: len(temp.guesses[key]), reverse = True)
+            for key in keys:
+                print str(key) + ': ' + str(temp.guesses[key])
             return temp.solve_board_helper(keys)
         else:
             print ">>> This is not a valid board:"
