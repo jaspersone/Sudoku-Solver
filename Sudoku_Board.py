@@ -216,7 +216,6 @@ class Sudoku_Board(object):
     def find_values(self):
         # At this point, we will assume that self is a valid board
         assert self.valid_board()
-        print ">>>> Finding given values:" 
         self.find_givens()
         # loop through board and find all possible values for each slot, ignoring given slots
         changes_made = False
@@ -260,14 +259,13 @@ class Sudoku_Board(object):
         if self.valid_board():
             self.find_givens() # finds givens of board
             temp = self.copy() # make a new deep copy of board
-            print temp.givens
             # find logical givens
             temp.find_values()
             # starting making guesses to solve the board
             print ">>> Starting recursive board solution search"
             keys = temp.guesses.keys()
             keys.sort() # TODO: try messing with this to see if timing improves
-            print ">>>> These are the keys: " + str(keys)
+            print ">>>> These are the keys:\n" + str(keys)
             return temp.solve_board_helper(keys)
         else:
             print ">>> This is not a valid board:"
@@ -278,30 +276,41 @@ class Sudoku_Board(object):
     # output: a solved board, or None if the board is not solveable
     def solve_board_helper(self, keys):
         print 'inside solve_board_helper()'
+        print self
+        for key in keys:
+            print str(key) + ': ' + str(self.guesses[key]) + '\n'
         assert self.__class__ == Sudoku_Board
-        if len(keys) == 0:
+        if len(keys) == 0 or self.__dict__:
             # check board for completeness
             if self.is_complete():
-                print 'Yay, found a solution!!!'
+                print 'Yay, found a solution!!!\n\n\n\n'
                 return self
             else:
-                print 'Did not find a solution!!!'
+                print 'Did not find a solution!!!\n\n\n\n'
                 return None
         else: # assume there are guesses left
             print 'inside solve_board_helper() else'
             first_key = keys.pop() # grab first of the set of keys
             solution = None
-            for guess in first_key:
+            for guess in self.guesses[first_key]:
                 temp_row = first_key[0]
                 temp_col = first_key[1]
+                print 'Looking at: ' + str((temp_row, temp_col)) + ' => ' + str(guess)
                 if self.valid_move(temp_row, temp_col, guess):
                     # if the option is still a valid choice try it
+                    print '>>> inside solve_board_helper > else > valid_move'
                     self.set(temp_row, temp_col, guess)
                     self.givens[first_key] = guess
                     solution = self.solve_board_helper(keys)
-                print 'trying to add ' + str(guess) + ' at: ' + str(first_key)
-                print self
-            return solution
+                    print 'trying guess ' + str(guess) + ' at: ' + str(first_key)
+                    print self
+                else:
+                    print '>>> Skipped adding guess: ' + str(guess)
+                    print '>>>>> Possible guesses: ' + str(self.guesses[first_key])
+                if solution.is_complete:
+                    return solution.solve_board_helper(keys)
+                else:
+                    self.givens.pop(first_key)
 
     def clear(self):
         self.givens.clear() # remove all given values
@@ -513,30 +522,73 @@ if __name__ == "__main__":
             test_result = board1.valid_board()
             test_message(test_result, m)
 
-        # Test: find_givens
+        # Test: find_givens()
         # loop of tests
         print "Testing find_givens()"
 
         for x in xrange(LOOP_COUNT):
             board1 = Sudoku_Board.generate_random_board()
-            # insure that all givens are added to list
             board1.find_givens()
-            test_list = board1.givens.values()
-            test_list.sort()
-            control_list = []
-            # make a list of all givens
-            for row in board1.board:
-                for val in row:
-                    if val != 0:
-                        control_list.append(val)
-            control_list.sort()
-            t_length = len(test_list)
-            c_length = len(control_list)
-            test_result = t_length == c_length and all(control_list[x] == test_list[x] for x in xrange(t_length))
-
+            
+            test_result = True
+            # test that all non-zero values are placed in givens
+            for row in xrange(board1.board_size):
+                if not test_result: break
+                for col in xrange(board1.board_size):
+                    if board1.board[row][col] != 0:
+                        has_key = board1.givens.has_key((row,col))
+                        matches = board1.board[row][col] == board1.givens[(row,col)]
+                        test_result = has_key and matches
+                    if not test_result: break
             print board1
-            m = "find all givens " + str(x)
+            m = "all givens are placed in givens " + str(x)
             test_result = board1.valid_board()
+            test_message(test_result, m)
+
+        # TEST: find_values()
+        print 'Testing find_values()'
+        for x in xrange(LOOP_COUNT):
+            board1 = Sudoku_Board.generate_random_board()
+            board1.find_givens()
+            board1.find_values()
+            
+            test_result = True
+            # test that all non-givens are placed in guesses and the guesses has the correct
+            # values for possible moves
+            m = 'find_values() ' + str(x)
+            for row in xrange(board1.board_size):
+                if not test_result: break
+                for col in xrange(board1.board_size):
+                    if board1.board[row][col] == 0:
+                        # if the value is zero, the row col should be in guesses and not in givens
+                        in_givens = board1.givens.has_key((row,col))
+                        in_guesses = board1.guesses.has_key((row,col))
+                        all_valid = True
+                        for val in board1.guesses[(row,col)]:
+                            all_valid = board1.valid_move(row,col,val)
+                            if not all_valid: break
+                        test_result = not in_givens and in_guesses and all_valid
+                        if not test_result:
+                            m += ': '
+                            if in_givens or not in_guesses:
+                                m += '[new value not properly places] '
+                            if not all_valid:
+                                m += '[all guesses are not correct]'
+                            break
+            print board1
+            test_result = board1.valid_board()
+            test_message(test_result, m)
+        
+        # TEST: solve_board()
+        print 'Testing solve_board()'
+        for x in xrange(LOOP_COUNT):
+            upper_limit = board1.board_size * board1.board_size - board1.board_size
+            board_difficulty = random.randint(board1.easy_setting, upper_limit)
+            m = 'solve_board(' + str(board_difficulty) + '): test #' + str(x)
+            board1 = Sudoku_Board.generate_random_board(board_difficulty) # higher num is harder
+            solution = board1.solve_board()
+            
+            test_result = solution != None and solution.valid_board()
             test_message(test_result, m)
 
         # displays test result summary:
