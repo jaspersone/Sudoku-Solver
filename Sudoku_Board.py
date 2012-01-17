@@ -256,6 +256,11 @@ class Sudoku_Board(object):
             finding the given values, then passing on a copy of the board to recursive helper
             function solve_board_helper.'''
         assert self.__class__ == Sudoku_Board
+        print '\n\n\n'
+        print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+        print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+        print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+        print self
         if self.valid_board():
             self.find_givens() # finds givens of board
             temp = self.copy() # make a new deep copy of board
@@ -280,7 +285,7 @@ class Sudoku_Board(object):
         for key in keys:
             print str(key) + ': ' + str(self.guesses[key]) + '\n'
         assert self.__class__ == Sudoku_Board
-        if len(keys) == 0 or self.__dict__:
+        if len(keys) == 0 or self is None:
             # check board for completeness
             if self.is_complete():
                 print 'Yay, found a solution!!!\n\n\n\n'
@@ -295,22 +300,21 @@ class Sudoku_Board(object):
             for guess in self.guesses[first_key]:
                 temp_row = first_key[0]
                 temp_col = first_key[1]
-                print 'Looking at: ' + str((temp_row, temp_col)) + ' => ' + str(guess)
+                print 'Looking at: ' + str((temp_row, temp_col)) + ' => ' + str(self.guesses[first_key])
                 if self.valid_move(temp_row, temp_col, guess):
                     # if the option is still a valid choice try it
                     print '>>> inside solve_board_helper > else > valid_move'
                     self.set(temp_row, temp_col, guess)
                     self.givens[first_key] = guess
-                    solution = self.solve_board_helper(keys)
-                    print 'trying guess ' + str(guess) + ' at: ' + str(first_key)
-                    print self
+                    print '>>> Adding guess ' + str(guess) + ' at: ' + str(first_key)
+                    solution = self.solve_board_helper(copy.deepcopy(keys))
                 else:
-                    print '>>> Skipped adding guess: ' + str(guess)
-                    print '>>>>> Possible guesses: ' + str(self.guesses[first_key])
-                if solution.is_complete:
-                    return solution.solve_board_helper(keys)
-                else:
-                    self.givens.pop(first_key)
+                    print '>>> Skipped adding guess: ' + str(guess) + '\n'
+                if solution is not None and solution.is_complete():
+                    return solution
+            if solution is None and self.givens.has_key(first_key):
+                print 'Could not find a fit in: ' + str(first_key) + ' => ' + str(self.guesses[first_key])
+                self.givens.pop(first_key)
 
     def clear(self):
         self.givens.clear() # remove all given values
