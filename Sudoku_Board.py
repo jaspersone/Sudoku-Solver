@@ -1,6 +1,7 @@
 import sys
 import copy
 import random
+import time
 
 # The Sudoku Board Class is simple board consisting of a 2d array
 class Sudoku_Board(object):
@@ -255,6 +256,7 @@ class Sudoku_Board(object):
             function solve_board_helper.'''
         assert self.__class__ == Sudoku_Board
         print self
+        s = time.time()
         if self.valid_board():
             self.find_givens() # finds givens of board
             temp = self.copy() # make a new deep copy of board
@@ -266,9 +268,14 @@ class Sudoku_Board(object):
             keys = sorted(keys, key=lambda key: len(temp.guesses[key]), reverse = True)
             for key in keys:
                 print str(key) + ': ' + str(temp.guesses[key])
-            return temp.solve_board_helper(keys)
+            solution = temp.solve_board_helper(keys)
+            e = time.time()
+            print 'Time to solve board: ' + str(e - s) + ' seconds.'
+            if solution is None:
+                print '>>> There is no solution for this board'
+            return solution
         else:
-            print ">>> This is not a valid board:"
+            print '>>> This is not a valid board:'
             print self
             return None
 
@@ -278,7 +285,8 @@ class Sudoku_Board(object):
         assert self.__class__ == Sudoku_Board
         if len(keys) < 1:
             if self.is_complete():
-                print "!!! FOUND SOLUTION !!!"
+                print '---------------------------------------'
+                print '!!! FOUND SOLUTION !!!'
                 print self
                 return self
             else:
@@ -337,7 +345,6 @@ if __name__ == "__main__":
     TEST = True
    # This is for testing
     if TEST:
-        import time
         LOOP_COUNT = 10
         test_count = 0
         pass_count = 0
@@ -583,8 +590,8 @@ if __name__ == "__main__":
 
         # displays test result summary:
         time_end = time.time()
-        print "Ran a total of " + str(test_count) + " tests."
-        print "Test runtime: " + str(time_end - time_start) + " seconds"
-        print "Total tests passed: " + str(pass_count)
-        print "Total tests failed: " + str(fail_count)
+        print "ran a total of " + str(test_count) + " tests."
+        print "test runtime: " + str(time_end - time_start) + " seconds"
+        print "total tests passed: " + str(pass_count)
+        print "total tests failed: " + str(fail_count)
         print "\n"
